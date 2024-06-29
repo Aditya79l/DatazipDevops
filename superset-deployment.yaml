@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: superset
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: superset
+  template:
+    metadata:
+      labels:
+        app: superset
+    spec:
+      containers:
+      - name: superset
+        image: apache/superset:latest
+        ports:
+        - containerPort: 8088
+        env:
+        - name: SUPERSET_ENV
+          value: production
+        - name: SUPERSET_SECRET_KEY
+          value: thisISaSECRETkey12345
+        - name: SUPERSET_DATABASE_URI
+          value: sqlite:////app/superset_home/superset.db
+        volumeMounts:
+        - name: superset-storage
+          mountPath: /app/superset_home
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8088
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8088
+          initialDelaySeconds: 10
+          periodSeconds: 20
+  volumes:
+  - name: superset-storage
+    persistentVolumeClaim:
+      claimName: superset-pvc
